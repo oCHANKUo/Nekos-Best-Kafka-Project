@@ -16,6 +16,8 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
+# a simple function that returns images from nekos.best API with JSON serializer.
+# for non string data, serialization is needed
 def fetch_images(category, amount=1):
     url = f"{BASE_URL}/{category}"
     params = {"amount": amount}
@@ -30,6 +32,7 @@ def fetch_images(category, amount=1):
 def main():
     while True:
         for cat in CATEGORIES:
+            # calls the previous fetch_images function and assigns the results as Events
             results = fetch_images(cat, amount=1)
             for item in results:
                 event = {
@@ -37,9 +40,11 @@ def main():
                     "timestamp": int(time.time()),
                     "payload": item
                 }
+                # Sending a simple string message
+                # producer.send('my_topic', b'Hello, Kafka!')
                 producer.send(KAFKA_TOPIC, event)
                 print(f"Sent {cat}: {item.get('url')}")
-            producer.flush()
+            producer.flush() # Ensure all messages are sent before exiting
             time.sleep(10) # fetch every 10 seconds
 
 if __name__ == "__main__":
