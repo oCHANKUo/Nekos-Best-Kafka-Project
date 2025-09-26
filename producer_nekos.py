@@ -1,9 +1,8 @@
 # producer_nekos.py
-
 import time
 import requests
-from kafka import KafkaProducer
 import json
+from kafka import KafkaProducer
 
 KAFKA_BOOTSTRAP = "localhost:9092"
 KAFKA_TOPIC = "nekos-images"
@@ -13,7 +12,7 @@ CATEGORIES = ["neko", "waifu", "kitsune", "hug", "pat"]
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP,
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
 )
 
 # a simple function that returns images from nekos.best API with JSON serializer.
@@ -25,10 +24,10 @@ def fetch_images(category, amount=1):
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
         return r.json().get("results", [])
-    except requests.RequestException as e:
-        print(f"Error fetching images for category {category}: {e}")
+    except Exception as e:
+        print(f"Error fetching {category}: {e}")
         return []
-    
+
 def main():
     while True:
         for cat in CATEGORIES:
@@ -44,8 +43,8 @@ def main():
                 # producer.send('my_topic', b'Hello, Kafka!')
                 producer.send(KAFKA_TOPIC, event)
                 print(f"Sent {cat}: {item.get('url')}")
-            producer.flush() # Ensure all messages are sent before exiting
-            time.sleep(10) # fetch every 10 seconds
+        producer.flush() # Ensure all messages are sent before exiting
+        time.sleep(10)  # fetch every 10 seconds
 
 if __name__ == "__main__":
     main()

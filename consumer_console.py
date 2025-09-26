@@ -1,7 +1,7 @@
 # consumer_console.py
 import json
 from kafka import KafkaConsumer
-from collections import Counter # for counting images per category
+from collections import Counter
 
 KAFKA_BOOTSTRAP = "localhost:9092"
 KAFKA_TOPIC = "nekos-images"
@@ -10,13 +10,12 @@ consumer = KafkaConsumer(
     KAFKA_TOPIC,
     bootstrap_servers=KAFKA_BOOTSTRAP,
     group_id="nekos-consumer-group",
-    value_deserializer=lambda x: json.loads(x.decode('utf-8')), # JSON serialization
+    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
 )
 
 counter = Counter()
 
 print("Listening for events...\n")
-
 for msg in consumer:
     event = msg.value
     cat = event["category"]
