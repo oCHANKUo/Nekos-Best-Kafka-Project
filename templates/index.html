@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nekos Image Stream</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #status {
+      text-align: center;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      padding: 10px 15px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .image-card {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: white;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .image-card img {
+      max-width: 100%;
+      border-radius: 4px;
+    }
+
+    .image-info {
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐱 Nekos Image Stream</h1>
+  <div id="status">Connecting...</div>
+
+  <div class="stats" id="stats">
+    <div>Loading stats...</div>
+  </div>
+
+  <div class="image-grid" id="imageGrid">
+    <div>Waiting for images...</div>
+  </div>
+
+  <script>
+    const socket = io();
+    const imageGrid = document.getElementById('imageGrid');
+    const statsContainer = document.getElementById('stats');
+    const statusElement = document.getElementById('status');
+
+    let images = {};
+    let counters = {};
+
+    socket.on('connect', () => {
+      statusElement.textContent = 'Connected';
+      statusElement.style.color = 'green';
+    });
+
+    socket.on('disconnect', () => {
+      statusElement.textContent = 'Disconnected';
+      statusElement.style.color = 'red';
+    });
+
+    socket.on('initial_data', (data) => {
+      images = data.latest_images || {};
+      counters = data.counters || {};
+      updateStats();
+      updateImageGrid();
+    });
+
+    socket.on('new_image', (data) => {
+      images[data.category] = {
+        url: data.url,
+        artist: data.artist,
+        timestamp: data.timestamp,
+        count: data.count
+      };
+      counters = data.counters;
+      updateStats();
+      updateImageGrid();
+    });
+
+    function updateStats() {
+      const categories = Object.keys(counters);
+      if (categories.length === 0) {
+        statsContainer.innerHTML = '<div>No data yet...</div>';
+        return;
+      }
+      statsContainer.innerHTML = categories.map(category => `
+        <div class="stat-card">
+          <div class="stat-number">${counters[category] || 0}</div>
+          <div>${category}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateImageGrid() {
+      const imageKeys = Object.keys(images);
+      if (imageKeys.length === 0) {
+        imageGrid.innerHTML = '<div>No images yet...</div>';
+        return;
+      }
+      imageGrid.innerHTML = imageKeys.map(category => {
+        const img = images[category];
+        return `
+          <div class="image-card">
+            <div><strong>${category}</strong></div>
+            <a href="${img.url}" target="_blank">
+              <img src="${img.url}" alt="${category}">
+            </a>
+            <div class="image-info">
+              🎨 ${img.artist || 'Unknown'}<br>
+              ⏰ ${new Date(img.timestamp * 1000).toLocaleString()}<br>
+              📊 Count: ${img.count}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
